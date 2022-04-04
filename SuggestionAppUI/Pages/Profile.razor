@@ -1,0 +1,195 @@
+﻿@page "/Profile"
+@attribute [Authorize]
+@inject AuthenticationStateProvider authProvider
+@inject ISuggestionData suggestionData
+@inject IUserData userData
+@inject NavigationManager navManager
+
+<h1>My Profile</h1>
+<div>
+    <div>
+        <button @onclick="ClosePage"></button>
+    </div>
+</div>
+
+<div>
+    <h2>My Account</h2>
+    <p>
+        <a href="MicrosoftIdentity/Account/EditProfile">
+            Edit Profile
+        </a>
+    </p>
+</div>
+
+@if(_approved?.Count > 0)
+{
+    <div>
+        <h2>Approved Suggestions</h2>
+        <p>These are your suggestions that are currently active.</p>
+        @foreach (var suggestion in _approved)
+        {
+            <hr />
+            <div>
+                @suggestion.Suggestion
+            </div>
+            <p>
+                @suggestion.DateCreated.ToString("MM.dd.yyyy")
+            </p>
+            <p>
+                Total Votes: @suggestion.UserVotes.Count()
+            </p>
+            <p>
+                @suggestion.Category.CategoryName
+            </p>
+            <p>
+                @suggestion.Description
+            </p>
+            @if (suggestion.SuggestionStatus != null)
+            {
+                <div>
+                    @suggestion.SuggestionStatus.StatusName
+                </div>
+                <p>
+                    @((MarkupString)suggestion.OwnerNotes)
+                </p>
+            }
+        }
+    </div>
+}
+
+@if(_archived?.Count > 0)
+{
+    <div>
+        <h2>Archived Suggestions</h2>
+        <p>These are your suggestions that were active but did not gain enough traction.</p>
+        @foreach (var suggestion in _archived)
+        {
+            <hr />
+            <div>
+                @suggestion.Suggestion
+            </div>
+            <p>
+                @suggestion.DateCreated.ToString("MM.dd.yyyy")
+            </p>
+            <p>
+                Total Votes: @suggestion.UserVotes.Count()
+            </p>
+            <p>
+                @suggestion.Category.CategoryName
+            </p>
+            <p>
+                @suggestion.Description
+            </p>
+            @if (suggestion.SuggestionStatus != null)
+            {
+                <div>
+                    @suggestion.SuggestionStatus.StatusName
+                </div>
+                <p>
+                    @((MarkupString)suggestion.OwnerNotes)
+                </p>
+            }
+        }
+    </div>
+}
+
+@if(_pending?.Count > 0)
+{
+    <div>
+        <h2>Pending Suggestions</h2>
+        <p>These are your suggestions that have not yet been reviewed by the administrator.</p>
+        @foreach (var suggestion in _pending)
+        {
+            <hr />
+            <div>
+                @suggestion.Suggestion
+            </div>
+            <p>
+                @suggestion.DateCreated.ToString("MM.dd.yyyy")
+            </p>
+            <p>
+                Total Votes: @suggestion.UserVotes.Count()
+            </p>
+            <p>
+                @suggestion.Category.CategoryName
+            </p>
+            <p>
+                @suggestion.Description
+            </p>
+            @if (suggestion.SuggestionStatus != null)
+            {
+                <div>
+                    @suggestion.SuggestionStatus.StatusName
+                </div>
+                <p>
+                    @((MarkupString)suggestion.OwnerNotes)
+                </p>
+            }
+        }
+    </div>
+}
+
+@if(_rejected?.Count > 0)
+{
+    <div>
+        <h2>Rejected Suggestions</h2>
+        <p>These are your suggestions that were not deemed to be appropriate for the training suggestions site.</p>
+        @foreach (var suggestion in _rejected)
+        {
+            <hr />
+            <div>
+                @suggestion.Suggestion
+            </div>
+            <p>
+                @suggestion.DateCreated.ToString("MM.dd.yyyy")
+            </p>
+            <p>
+                Total Votes: @suggestion.UserVotes.Count()
+            </p>
+            <p>
+                @suggestion.Category.CategoryName
+            </p>
+            <p>
+                @suggestion.Description
+            </p>
+            @if (suggestion.SuggestionStatus != null)
+            {
+                <div>
+                    @suggestion.SuggestionStatus.StatusName
+                </div>
+                <p>
+                    @((MarkupString)suggestion.OwnerNotes)
+                </p>
+            }
+        }
+    </div>
+}
+
+@code {
+    private UserModel _loggedInUser;
+    private List<SuggestionModel> _submissions;
+    private List<SuggestionModel> _approved;
+    private List<SuggestionModel> _archived;
+    private List<SuggestionModel> _rejected;
+    private List<SuggestionModel> _pending;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loggedInUser = await authProvider.GetUserFromAuth(userData);
+
+        var results = await suggestionData.GetUsersSuggestions(_loggedInUser.Id);
+
+        if(_loggedInUser != null && results != null)
+        {
+            _submissions = results.OrderByDescending(s => s.DateCreated).ToList();
+            _approved = _submissions.Where(s => s.ApprovedForRelease && s.Archived == false && s.Rejected == false).ToList();
+            _archived = _submissions.Where(s => s.Archived && s.Rejected == false).ToList();
+            _rejected = _submissions.Where(s => s.Rejected).ToList();
+            _pending = _submissions.Where(s => s.ApprovedForRelease == false && s.Rejected == false).ToList();
+        }
+    }
+    private void ClosePage()
+    {
+        navManager.NavigateTo("/");
+    }
+}

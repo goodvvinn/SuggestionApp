@@ -1,0 +1,313 @@
+﻿@page "/"
+@inject AuthenticationStateProvider authProvider
+@inject ICategoryData categoryData
+@inject IStatusData statusData
+@inject ISuggestionData suggestionData
+@inject IUserData userData
+@inject NavigationManager navManager
+@inject ProtectedSessionStorage sessionStorage
+
+<h1>Training Suggestions</h1>
+<div>
+    <button>Suggest</button>
+</div>
+
+<div>
+    <div> @_suggestions?.Count Suggestions</div>
+    <div>
+        <button @onclick = "(() => OrderByNew(true))">New</button>
+        <button @onclick = "(() => OrderByNew(false))">Popular</button>
+    </div>
+    <div>
+        <input type="text" placeholder="Search" aria-label="Search box" @oninput="((txt) => OnSearchInput((string)txt.Value))" />
+    </div>
+</div>
+
+<div>
+    <div>
+        @if (_suggestions != null)
+        {
+            <Virtualize Items="@_suggestions" Context="s" OverscanCount="10">
+                <div>
+                    <div @onclick="(() => VoteUp(s))">
+                        <div>@GetUpvoteTopText(s)</div>
+                        <span class="oi oi-caret-top"></span>
+                        <div>@GetUpvoteBottomText(s)</div>
+                    </div>
+                    <div>
+                        <div @onclick="(() => OpenDetails(s))">
+                            @s.Suggestion
+                        </div>
+                        <div>
+                            <div @onclick="(() => OpenDetails(s))">
+                                @s.Category?.CategoryName
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div>
+                            @s.SuggestionStatus?.StatusName
+                        </div>
+                    </div>
+                   
+                </div>
+            </Virtualize>
+        }
+    </div>
+    <div>
+        @if (_categories != null)
+        {
+            <div>
+                <span>Category</span>
+                <div @onclick="(() => OnCategoryClick())">All</div>
+                @foreach(var c in _categories)
+                {
+                    <div @onclick="(() => OnCategoryClick(c.CategoryName))">@c.CategoryName</div>
+                }
+            </div>
+        }
+
+        @if (_statuses != null)
+        {
+            <div>
+                <span>Status</span>
+                <div @onclick="(() => OnStatusClick())">All</div>
+                @foreach(var s in _statuses)
+                {
+                    <div @onclick="(() => OnStatusClick(s.StatusName))">@s.StatusName</div>
+                }
+            </div>
+            
+        }
+    </div>
+</div>
+
+@code{
+    private UserModel _loggedInUser;
+    private List<SuggestionModel> _suggestions;
+    private List<CategoryModel> _categories;
+    private List<UserModel> _users;
+    private List<StatusModel> _statuses;
+
+    private string _selectedCategory = "All";
+    private string _selectedStatus = "All";
+    private string _searchText = string.Empty;
+    bool isSortedByNew = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await categoryData.GetAllCategories();
+        _statuses = await statusData.GetAllStatuses();
+        await LoadAndVerifyUser();
+    }
+
+    private async Task LoadAndVerifyUser()
+    {
+        var authState = await authProvider.GetAuthenticationStateAsync();
+        var objectId = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("objectidentifier"))?.Value;
+
+        if (string.IsNullOrWhiteSpace(objectId) == false)
+        {
+            _loggedInUser = await userData.GetUserFromAuthentication(objectId)?? new();
+
+            var firstName = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("givenname"))?.Value;
+            var lastName = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("surname"))?.Value;
+            var displayName = authState.User.Claims.FirstOrDefault(c => c.Type.Equals("name"))?.Value;
+            var email = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("email"))?.Value;
+
+            bool isDurty = false;
+
+            if (objectId.Equals(_loggedInUser.ObjectIdentifier) == false)
+            {
+                isDurty = true;
+                _loggedInUser.ObjectIdentifier = objectId;
+            }
+            if (firstName.Equals(_loggedInUser.FirstName) == false)
+            {
+                isDurty = true;
+                _loggedInUser.FirstName = firstName;
+            }
+            if (lastName.Equals(_loggedInUser.LastName) == false)
+            {
+                isDurty = true;
+                _loggedInUser.LastName = lastName;
+            }
+            if (displayName.Equals(_loggedInUser.DisplayName) == false)
+            {
+                isDurty = true;
+                _loggedInUser.DisplayName = displayName;
+            }
+            if (email.Equals(_loggedInUser.EmailAdress) == false)
+            {
+                isDurty = true;
+                _loggedInUser.EmailAdress = email;
+            }
+            if (isDurty)
+            {
+                if(string.IsNullOrWhiteSpace(_loggedInUser.Id))
+                {
+                    await userData.CreateUser(_loggedInUser);
+                }
+                else
+                {
+                    await userData.UpdateUser(_loggedInUser);
+                }
+
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(firstRender)
+        {
+            await LoadFilterState();
+            await FilterSuggestions();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadFilterState()
+    {
+        var stringResults = await sessionStorage.GetAsync<string>(nameof(_selectedCategory));
+        _selectedCategory = stringResults.Success ? stringResults.Value : "All";
+
+        stringResults = await sessionStorage.GetAsync<string>(nameof(_selectedStatus));
+        _selectedStatus = stringResults.Success ? stringResults.Value : "All";
+
+        stringResults = await sessionStorage.GetAsync<string>(nameof(_searchText));
+        _searchText = stringResults.Success ? stringResults.Value : string.Empty;
+
+        var boolResults = await sessionStorage.GetAsync<bool>(nameof(isSortedByNew));
+        isSortedByNew = boolResults.Success ? boolResults.Value : true;
+    }
+
+    private async Task SaveFilterState()
+    {
+        await sessionStorage.SetAsync(nameof(_selectedCategory), _selectedCategory);
+        await sessionStorage.SetAsync(nameof(_selectedStatus), _selectedStatus);
+        await sessionStorage.SetAsync(nameof(_searchText), _searchText);
+        await sessionStorage.SetAsync(nameof(isSortedByNew), isSortedByNew);
+    }
+
+    private async Task FilterSuggestions()
+    {
+        var output = await suggestionData.GetAllApprovedSuggestions();
+        if(_selectedCategory != "All")
+        {
+            output = output.Where(s => s.Category?.CategoryName == _selectedCategory).ToList();
+        }
+
+        if(_selectedStatus != "All")
+        {
+            output = output.Where(s => s.SuggestionStatus?.StatusName == _selectedStatus).ToList();
+        }
+
+        if (string.IsNullOrWhiteSpace(_searchText) == false)
+        {
+            output = output.Where(
+                s => s.Suggestion.Contains(_searchText, StringComparison.InvariantCultureIgnoreCase) ||
+                s.Description.Contains(_searchText, StringComparison.InvariantCultureIgnoreCase)
+            ).ToList();
+        }
+        if(isSortedByNew)
+        {
+            output = output.OrderByDescending(o => o.DateCreated).ToList();
+        }
+        else
+        {
+            output = output.OrderByDescending(o => o.UserVotes.Count)
+                            .ThenByDescending(o => o.DateCreated).ToList();
+        }
+        _suggestions = output;
+
+        await SaveFilterState();
+    }
+
+    private async Task OrderByNew(bool isNew)
+    {
+        isSortedByNew = isNew;
+        await FilterSuggestions();
+    }
+
+    private async Task OnSearchInput(string searchInput)
+    {
+        _searchText = searchInput;
+        await FilterSuggestions();
+    }
+
+    private async Task OnCategoryClick(string category = "All")
+    {
+        _selectedCategory = category;
+        await FilterSuggestions();
+    }
+    private async Task OnStatusClick(string status = "All")
+    {
+        _selectedStatus = status;
+        await FilterSuggestions();
+    }
+
+    private async Task VoteUp(SuggestionModel suggestion)
+    {
+        if (_loggedInUser != null)
+        {
+            if (suggestion.Author.Id == _loggedInUser.Id)
+            {
+                // Can`t vote on you own suggestion
+                return;
+            }
+            if (!suggestion.UserVotes.Add(_loggedInUser.Id))
+            {
+                suggestion.UserVotes.Remove(_loggedInUser.Id);
+            }
+
+            await suggestionData.UpvoteSuggestion(suggestion.Id, _loggedInUser.Id);
+
+            if (!isSortedByNew)
+            {
+                _suggestions = _suggestions
+                .OrderByDescending(o => o.UserVotes.Count())
+                .ThenByDescending(o => o.DateCreated).ToList();
+            }
+
+        }
+        else
+        {
+            navManager.NavigateTo("/MicrosoftIdentity/Account/SignIn", true);
+        }
+    }
+
+    private string GetUpvoteTopText(SuggestionModel suggestion)
+    {
+        if (suggestion.UserVotes.Count > 0)
+        {
+            return suggestion.UserVotes?.Count.ToString("00");
+        }
+        else
+        {
+            if (suggestion.Author.Id == _loggedInUser?.Id)
+            {
+                return "Awaiting";
+            }
+            else
+            {
+                return "Click To";
+            }
+        }
+    }
+    private string GetUpvoteBottomText(SuggestionModel suggestion)
+    {
+        if (suggestion.UserVotes?.Count > 1)
+        {
+            return "Upvotes";
+        }
+
+        return "Upvote";
+    }
+
+    private void OpenDetails(SuggestionModel suggestion)
+    {
+        navManager.NavigateTo($"/Details/{suggestion.Id}");
+    }
+}
+
