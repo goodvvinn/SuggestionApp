@@ -1,6 +1,4 @@
-﻿using MongoDB.Driver;
-
-namespace SuggestionAppLib.DataAccess;
+﻿namespace SuggestionAppLib.DataAccess;
 
 public interface IDbConnection
 {

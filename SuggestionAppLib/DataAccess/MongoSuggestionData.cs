@@ -29,10 +29,10 @@ public class MongoSuggestionData : ISuggestionData
         return output;
     }
 
-    public async Task<List<SuggestionModel>> GetUsersSuggestions(string userId) 
+    public async Task<List<SuggestionModel>> GetUsersSuggestions(string userId)
     {
         var output = _memoryCache.Get<List<SuggestionModel>>(userId);
-        if(output == null) 
+        if (output == null)
         {
             var userSuggestions = await _suggestions.FindAsync(s => s.Author.Id == userId);
             output = userSuggestions.ToList();
@@ -65,7 +65,7 @@ public class MongoSuggestionData : ISuggestionData
     {
         var client = _dbConnection.Client;
         using var session = await client.StartSessionAsync();
-        
+
         session.StartTransaction();
         try
         {
@@ -74,12 +74,12 @@ public class MongoSuggestionData : ISuggestionData
             var suggestion = (await suggestionsInTransaction.FindAsync(s => s.Id == suggestionId)).First();
 
             bool IsUpvote = suggestion.UserVotes.Add(userId);
-            
+
             if (!IsUpvote)
             {
                 suggestion.UserVotes.Remove(userId);
             }
-            await suggestionsInTransaction.ReplaceOneAsync(session,s => s.Id == suggestionId, suggestion);
+            await suggestionsInTransaction.ReplaceOneAsync(session, s => s.Id == suggestionId, suggestion);
             var usersInTransaction = db.GetCollection<UserModel>(_dbConnection.UserCollectionName);
             var user = await _userData.GetUser(userId);
 
@@ -114,7 +114,7 @@ public class MongoSuggestionData : ISuggestionData
         {
             var db = client.GetDatabase(_dbConnection.DbName);
             var suggestionsInTransaction = db.GetCollection<SuggestionModel>(_dbConnection.SuggestionCollectionName);
-            await suggestionsInTransaction.InsertOneAsync(session,suggestion);
+            await suggestionsInTransaction.InsertOneAsync(session, suggestion);
 
             var usersInTransaction = db.GetCollection<UserModel>(_dbConnection.UserCollectionName);
             var user = await _userData.GetUser(suggestion.Author.Id);

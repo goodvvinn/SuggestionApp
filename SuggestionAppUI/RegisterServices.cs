@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 
@@ -17,6 +18,8 @@ public static class RegisterServices
         builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
             .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAdB2C"));
 
+            
+
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy("Admin", policy =>
@@ -30,5 +33,6 @@ public static class RegisterServices
         builder.Services.AddSingleton<IStatusData, MongoStatusData>();
         builder.Services.AddSingleton<ISuggestionData, MongoSuggestionData>();
         builder.Services.AddSingleton<IUserData, MongoUserData>();
+        
     }
 }

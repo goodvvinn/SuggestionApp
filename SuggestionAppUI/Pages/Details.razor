@@ -4,32 +4,34 @@
 @inject ISuggestionData suggestionData
 @inject NavigationManager navManager
 
-<h1>Suggestion Details</h1>
-<div>
-    <div>
+<h1 class="page-heading text-uppercase mb-4">Suggestion Details</h1>
+<div class="row justify-content-center detail-form">
+    <div class="col-xl-8 col-lg-10 form-layout">
         @if (_suggestion != null )
         {
-            <div>
-                <div>
-                    <div @onclick="VoteUp">
-                        <div>@GetUpvoteTopText()</div>
-                        <span class="oi oi-caret-top"></span>
-                        <div>@GetUpvoteBottomText()</div>
-                    </div>
+            <div class="row suggestion-detail-row">
+                <div class="col-11 suggestion-detail">
                     <div>
-                        <div>@_suggestion.DateCreated.ToString("MM.dd.yyyy")</div>
+                        <div class="@GetVoteClass()" @onclick="VoteUp">
+                            <div class="text-uppercase">@GetUpvoteTopText()</div>
+                            <span class="oi oi-caret-top detail-upvote"></span>
+                            <div class="text-uppercase">@GetUpvoteBottomText()</div>
+                        </div>
+                        <div class="suggestion-detail-date">
+                            <div>@_suggestion.DateCreated.ToString("MM.dd.yyyy")</div>
+                        </div>
                     </div>
+                        <div class="suggestion-detail-text">
+                        <div class="fw-bold mb-2 suggestion-detail-suggestion">@_suggestion.Suggestion</div>
+                        <div class="mb-2 suggestion-detail-author">@_suggestion.Author.DisplayName</div>
+                        <div class="mb-2">@_suggestion.Description</div>
+                        <div class="suggestion-entry-text-category">
+                            @_suggestion.Category.CategoryName
+                       </div>
                 </div>
-                <div>
-                    <div>@_suggestion.Suggestion</div>
-                    <div>@_suggestion.Author.DisplayName</div>
-                    <div>@_suggestion.Description</div>
-                    <div>
-                        @_suggestion.Category.CategoryName
-                   </div>
                 </div>
-                <div>
-                    <button @onclick="ClosePage"></button>
+                <div class="col-1 close-button-section">
+                    <button class="btn btn-close" @onclick="ClosePage"></button>
                 </div>
             </div>
         }
@@ -38,14 +40,14 @@
 
 @if (_suggestion?.SuggestionStatus != null)
 {
-    <div>
-        <div>
-            <div></div>
-            <div>
-                <div>
+    <div class="row justify-content-center detail-form">
+        <div class="col-xl-8 col-lg-10 suggestion-results form-layout">
+            <div class="@GetStatusClass()"></div>
+            <div class="suggestion-detail-status-section">
+                <div class="suggestion-detail-status fw-bold mb-2 suggestion-detail-suggestion">
                     @_suggestion.SuggestionStatus.StatusName
                 </div>
-                <div>
+                <div class="suggestion-detail-owner-notes">
                     @((MarkupString)_suggestion.OwnerNotes)
                 </div>
             </div>
@@ -56,7 +58,7 @@
 @code {
     [Parameter]
     public string Id { get; set; }
-
+    
     private SuggestionModel _suggestion;
     private UserModel _loggedInUser;
 
@@ -70,7 +72,6 @@
     {
         navManager.NavigateTo("/");
     }
-
     private string GetUpvoteTopText()
     {
         if (_suggestion.UserVotes.Count > 0)
@@ -79,7 +80,7 @@
         }
         else
         {
-           if (_suggestion.Author.Id == _loggedInUser?.Id)
+            if (_suggestion.Author.Id == _loggedInUser?.Id)
             {
                 return "Awaiting";
             }
@@ -98,7 +99,6 @@
 
         return "Upvote";
     }
-
     private async Task VoteUp()
     {
         if (_loggedInUser != null)
@@ -119,5 +119,40 @@
         {
             navManager.NavigateTo("/MicrosoftIdentity/Account/SignIn", true);
         }
+    }
+    private string GetVoteClass()
+    {
+        if (_suggestion.UserVotes == null || _suggestion.UserVotes.Count == 0)
+        {
+
+            return "suggestion-detail-no-votes";
+        }
+
+        else if (_suggestion.UserVotes.Contains(_loggedInUser?.Id))
+        {
+            return "suggestion-detail-voted";
+        }
+        else
+        {
+            return "suggestion-detail-not-voted";
+        }
+    }
+    private string GetStatusClass()
+    {
+        if (_suggestion.SuggestionStatus == null | _suggestion == null)
+        {
+            return "suggestion-detail-status-none";
+        }
+
+        var output = _suggestion?.SuggestionStatus.StatusName switch
+        {
+            "Completed" => "suggestion-detail-status-completed",
+            "Watching" => "suggestion-detail-status-watching",
+            "Upcoming" => "suggestion-detail-status-upcoming",
+            "Dismissed" => "suggestion-detail-status-dismissed",
+            _ => "suggestion-detail-status-none",
+        };
+
+        return output;
     }
 }

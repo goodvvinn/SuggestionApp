@@ -21,15 +21,16 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+
 app.UseAuthentication();
 
 app.UseAuthorization();
 
-app.UseRewriter( 
+app.UseRewriter(
     new RewriteOptions().Add(
-        context => 
+        context =>
         {
-            if(context.HttpContext.Request.Path == "/MicrosoftIdentity/Account/SignedOut") 
+            if (context.HttpContext.Request.Path == "/MicrosoftIdentity/Account/SignedOut")
             {
                 context.HttpContext.Response.Redirect("/");
             }
