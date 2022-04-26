@@ -266,8 +266,8 @@ a, .btn-link {
 }
 
 .suggestion-entry-status-completed {
-    background-color: #B5D43A;
-    border: 1px #B5D43A solid;
+    background-color: #2ECC71;
+    border: 1px #2ECC71 solid;
 }
 
 .suggestion-entry-status-watching {
@@ -468,7 +468,7 @@ a, .btn-link {
 }
 
 .suggestion-detail-status-completed {
-    background-color: #B5D43A;
+    background-color: #2ECC71;
     border-top-left-radius: 15px;
     border-bottom-left-radius: 15px;
 }
@@ -523,13 +523,13 @@ a, .btn-link {
 
 .btn-approve {
     color: #FFFFFF;
-    background-color: #B5D43A;
+    background-color: #2ECC71;
     border-color: #FFFFFF;
 }
 
     .btn-approve:hover {
-        color: #B5D43A;
-        border-color: #B5D43A;
+        color: #2ECC71;
+        border-color: #2ECC71;
         background-color: #FFFFFF;
     }
 
@@ -540,7 +540,7 @@ a, .btn-link {
 }
 
     .btn-reject:hover {
-        color: #B5D43A;
+        color: #2ECC71;
         border-color: #E9354C;
         background-color: #FFFFFF;
     }
@@ -555,7 +555,7 @@ a, .btn-link {
 }
 
 .submittion-edit-approve {
-    color: #B5D43A;
+    color: #2ECC71;
     
 }
 
@@ -620,4 +620,30 @@ a, .btn-link {
 
 .btn-archive-confirm {
     color: #E9354C;
+}
+
+.admin-details {
+    margin-top: 20px;
+}
+
+.admin-set-statuses {
+    display: flex;
+    justify-content: space-evenly;
+    flex-wrap: wrap;
+}
+
+.btn-status-completed:hover {
+    color: #2ECC71;
+}
+
+.btn-status-watching:hover {
+    color: #E9354C;
+}
+
+.btn-status-upcoming:hover {
+    color: #835581;
+}
+
+.btn-status-dismissed:hover {
+    color: #F9C30B;
 }

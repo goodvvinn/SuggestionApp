@@ -21,6 +21,42 @@
     <div class="col-md-4 col-xl-3 search-box">
         <input class="form-control rounded-control" type="text" placeholder="Search" aria-label="Search box" @oninput="((txt) => OnSearchInput((string)txt.Value))" />
     </div>
+    <div class="col-12 d-block d-md-none">
+        @if (_categories != null && showCategories)
+        {
+            <div class="categories">
+                <span class="text-uppercase fw-bold">Category</span>
+                <div class="@GetSelectedCategory()" @onclick="(() => OnCategoryClick())">All</div>
+                @foreach (var c in _categories)
+                {
+                    <div class="@GetSelectedCategory(c.CategoryName)" @onclick="(() => OnCategoryClick(c.CategoryName))">@c.CategoryName</div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="categories" @onclick="(() => showCategories = true)">
+                 <span class="selected-category">@_selectedCategory</span>
+            </div>
+        }
+        @if (_statuses != null && showStatuses)
+        {
+            <div class="statuses">
+                <span class="text-uppercase fw-bold">Status</span>
+                <div class="@GetSelectedStatus()" @onclick="(() => OnStatusClick())">All</div>
+                @foreach (var c in _statuses)
+                {
+                    <div class="@GetSelectedStatus(c.StatusName)" @onclick="(() => OnStatusClick(c.StatusName))">@c.StatusName</div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="statuses" @onclick="(() => showStatuses = true)">
+                <span class="selected-status">@_selectedStatus</span>
+            </div>
+        }
+    </div>
 </div>
 
 <div class="row">
@@ -72,7 +108,7 @@
             </Virtualize>
         }
     </div>
-    <div class="col-md-4 col-xl-3 ">
+    <div class="col-md-4 col-xl-3 d-none d-md-block">
         @if (_categories != null)
         {
             <div class="categories">
@@ -111,7 +147,9 @@
     private string _selectedCategory = "All";
     private string _selectedStatus = "All";
     private string _searchText = string.Empty;
-    bool isSortedByNew = true;
+    private bool isSortedByNew = true;
+    private bool showCategories = false;
+    private bool showStatuses = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -279,11 +317,13 @@
     private async Task OnCategoryClick(string category = "All")
     {
         _selectedCategory = category;
+        showCategories = false;
         await FilterSuggestions();
     }
     private async Task OnStatusClick(string status = "All")
     {
         _selectedStatus = status;
+        showStatuses = false;
         await FilterSuggestions();
     }
 

@@ -89,8 +89,8 @@ public class MongoSuggestionData : ISuggestionData
             }
             else
             {
-                var suggestionToRemove = user.VotedOnSuggestions.Where(s => s.Id == suggestionId).First();
-                user.VotedOnSuggestions.Remove(new BasicSuggestionModel(suggestion));
+                var suggestionToRemove = user.VotedOnSuggestions.Where(s => s.Id == suggestionId).FirstOrDefault();
+                user.VotedOnSuggestions.Remove(new BasicSuggestionModel(suggestionToRemove));
             }
             await usersInTransaction.ReplaceOneAsync(session, u => u.Id == user.Id, user);
 

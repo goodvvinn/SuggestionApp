@@ -6,7 +6,7 @@ public class BasicSuggestionModel
     public string Id { get; set; }
     public string Suggestion { get; set; }
 
-    public BasicSuggestionModel()
+    public BasicSuggestionModel(BasicSuggestionModel suggestionToRemove)
     {
     }
     public BasicSuggestionModel(SuggestionModel suggestion)
